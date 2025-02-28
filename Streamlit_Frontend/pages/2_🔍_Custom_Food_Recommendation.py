@@ -4,6 +4,11 @@ from ImageFinder.ImageFinder import get_images_links as find_image
 import pandas as pd
 from streamlit_echarts import st_echarts
 
+
+if "user_email" not in st.session_state:
+    st.warning("🔐 Please log in to access this page.")
+    st.stop()  # Stop execution to prevent unauthorized access
+
 st.set_page_config(page_title="Custom Food Recommendation", page_icon="🔍",layout="wide")
 nutrition_values=['Calories','FatContent','SaturatedFatContent','CholesterolContent','SodiumContent','CarbohydrateContent','FiberContent','SugarContent','ProteinContent']
 if 'generated' not in st.session_state:
