@@ -1,33 +1,46 @@
 import streamlit as st
-import openai  # OpenAI's official library
+import openai  
+st.set_page_config(page_title="🩺 Health Advice Chatbot", layout="centered")
+st.markdown(
+    """
+    <style>
+        .stTextArea textarea { font-size: 16px; }
+        .stButton button { background-color: #4CAF50; color: white; font-size: 16px; padding: 10px 20px; }
+        .stSelectbox div { font-size: 16px; }
+        .stSlider div { font-size: 16px; }
+        .response-box {
+            border-left: 5px solid #4CAF50;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-if "user_email" not in st.session_state:
-    st.warning("🔐 Please log in to access this page.")
-    st.stop()
-
-# Streamlit UI Configuration
-st.set_page_config(page_title="Health Advice Chatbot", layout="centered")
 st.title("🩺 Health Advice Chatbot")
-st.write("Get preliminary health advice based on your queries. **Note:** This is not a substitute for professional medical advice.")
+st.markdown("### 🤖 Your AI Health Consultant")
+st.info("Get preliminary health advice based on your queries. **Note:** This is not a substitute for professional medical advice.")
 
-# Fetch API key (Stored in st.secrets or entered manually)
-api_key = st.secrets.get("OPENAI_API_KEY", "")
-api_key = st.text_input("🔑 Enter OpenAI API Key", type="password", value=api_key)
+# Fetch API key from Streamlit secrets
+api_key = st.secrets["OPENAI_API_KEY"]
 
 # Query type selection
-query_type = st.selectbox("📌 Select Query Type", ["Symptom Checker", "Preventive Measures", "General Health Advice", "Medical Terms", "First Aid"])
+query_type = st.selectbox("📌 **Select Query Type**", 
+                          ["Symptom Checker", "Preventive Measures", "General Health Advice", "Medical Terms", "First Aid"])
 
 # User input with character limit
-user_input = st.text_area("✍️ Enter your query here:", max_chars=300, help="Keep your query brief (max 300 characters).")
+user_input = st.text_area("✍️ **Enter your query here:**", max_chars=300, help="Keep your query brief (max 300 characters).")
 
 # Token limit selection
-max_tokens = st.slider("🔢 Max Response Length (Tokens)", min_value=50, max_value=300, value=150)
+max_tokens = st.slider("🔢 **Max Response Length (Tokens)**", min_value=50, max_value=300, value=150)
 
-if st.button("🚀 Get Advice"):
+# Submit button
+if st.button("🚀 **Get Advice**"):
     if not user_input:
-        st.warning("⚠️ Please enter a query before submitting.")
-    elif not api_key:
-        st.warning("⚠️ Please enter a valid OpenAI API key.")
+        st.warning("⚠️ **Please enter a query before submitting.**")
     else:
         # Generate appropriate prompt based on query type
         query_mapping = {
@@ -39,30 +52,27 @@ if st.button("🚀 Get Advice"):
         }
         user_message = query_mapping[query_type]
 
-        # Set OpenAI API key
-        openai.api_key = api_key
+        # OpenAI API client
+        client = openai.OpenAI(api_key=api_key)
 
         # Display loading indicator
-        with st.spinner("Fetching response..."):
+        with st.spinner("⏳ **Fetching response...**"):
             try:
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "You are a helpful assistant providing health advice."},
+                        {"role": "system", "content": "You are a highly knowledgeable and empathetic health assistant dedicated to providing accurate, reliable, and easy-to-understand health and diet advice. Your primary role is to assist users with health-related inquiries, including symptoms, preventive care, nutrition, fitness, mental well-being, and first aid.When answering, carefully analyze the user’s query, ensuring that you fully understand their concern before responding. Provide clear, concise, and practical advice that is easy for anyone to comprehend, regardless of their medical knowledge. If necessary, offer step-by-step guidance, helpful precautions, and actionable tips to ensure users can apply the information effectively in real life.You must strictly limit your responses to health and diet-related topics. If a user asks a question unrelated to health, wellness, or nutrition, politely inform them that you are only trained to provide health-related advice and cannot assist with other topics.Ensure that all information you provide is based on well-established medical knowledge and best practices. However, always include a disclaimer that your advice should not replace professional medical consultation, diagnosis, or treatment. Encourage users to seek a healthcare professional when necessary.Your goal is to be a friendly, trustworthy, and helpful health assistant that empowers users to make informed decisions about their well-being."},
                         {"role": "user", "content": user_message}
                     ],
                     max_tokens=max_tokens
                 )
 
-                # Extract and display the response
-                advice = response['choices'][0]['message']['content'].strip()
+                # Extract response
+                advice = response.choices[0].message.content.strip()
 
-                st.success("✅ Response Received:")
-                st.write(advice)
+                # Display response in a better format
+                st.success("✅ **Response Received**")
+                st.markdown(f'<div class="response-box">{advice}</div>', unsafe_allow_html=True)
 
-            except openai.error.OpenAIError as e:
-                st.error(f"❌ OpenAI API Error: {e}")
             except Exception as e:
-                st.error(f"⚠️ Unexpected Error: {e}")
-
-        #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
+                st.error(f"⚠️ **Unexpected Error:** {e}")
